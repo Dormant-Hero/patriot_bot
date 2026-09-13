@@ -2,29 +2,21 @@ import discord
 import asyncio
 from discord.ext import commands
 from discord import app_commands
-import datetime
-from datetime import timezone, timedelta
 # note the below is pip install python-dotenv to get this one installed!
 from dotenv import load_dotenv
 import os
-import json
 from icecream import ic
 import time
 from pathlib import Path
 import psycopg2  # sudo yum install libpq-devel for fedora host
-from psycopg2 import sql
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import sys
 import typing
 import threading
-import random
-import re
-import pytz
 
 load_dotenv()
 
 DEFAULT_ROLE = "Patriots"
-UK_TZ = pytz.timezone('Europe/London')  # UK timezone
 DH_ID = os.environ.get("DH_ID")
 
 # testing enviornment_variables
