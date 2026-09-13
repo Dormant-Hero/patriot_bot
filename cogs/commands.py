@@ -171,18 +171,6 @@ class Commands(commands.Cog):
         self.load_commands()
         # Load embeds initially
         self.load_embeds()
-        self.reaction_roles = {}
-        print("Loading reaction roles from database...")
-        cur.execute("SELECT message_id, emoji_role_mapping FROM react_messages")
-        rows = cur.fetchall()
-        
-        for row in rows:
-            msg_id = row[0]
-            mapping = row[1] 
-            # Postgres JSONB automatically converts back to a Python Dict
-            self.reaction_roles[msg_id] = mapping
-            
-        print(f"Loaded {len(self.reaction_roles)} reaction role messages.")
 
     async def restart_cog(self):
         try:
@@ -216,75 +204,6 @@ class Commands(commands.Cog):
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         if payload.user_id == self.bot.user.id:
             return
-
-        # Check if the message is in our database/cache
-        if payload.message_id in self.reaction_roles:
-            # Handle both Custom and Standard Emojis
-            emoji_key = str(payload.emoji.id) if payload.emoji.is_custom_emoji() else payload.emoji.name
-            
-            role_id = self.reaction_roles[payload.message_id].get(emoji_key)
-            
-            if role_id:
-                guild = self.bot.get_guild(payload.guild_id)
-                role = guild.get_role(role_id)
-                member = payload.member # raw_reaction_add provides member directly
-                
-                if member and role:
-                    try:
-                        await member.add_roles(role)
-                        print(f"✅ Added {role.name} to {member.display_name}")
-                    except discord.Forbidden:
-                        print("❌ Error: Bot lacks 'Manage Roles' or role is too high.")
-                    except Exception as e:
-                        ic(e)
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
-        if payload.message_id in self.reaction_roles:
-            emoji_key = str(payload.emoji.id) if payload.emoji.is_custom_emoji() else payload.emoji.name
-            role_id = self.reaction_roles[payload.message_id].get(emoji_key)
-            
-            if role_id:
-                guild = self.bot.get_guild(payload.guild_id)
-                role = guild.get_role(role_id)
-                # For REMOVE, payload.member is None, so we must fetch him
-                member = guild.get_member(payload.user_id)
-                
-                if member and role:
-                    try:
-                        await member.remove_roles(role)
-                        print(f"--- Removed {role.name} from {member.display_name}")
-                    except Exception as e:
-                        ic(e)
-
-    @commands.Cog.listener()
-    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
-        """Automatically cleans up the DB when a reaction role message is deleted."""
-        # 1. Check if the deleted message is one of our reaction role messages
-        if payload.message_id in self.reaction_roles:
-            try:
-                # 2. Remove from PostgreSQL
-                delete_query = "DELETE FROM react_messages WHERE message_id = %s"
-                cur.execute(delete_query, (payload.message_id,))
-                
-                # 3. Remove from local memory cache
-                del self.reaction_roles[payload.message_id]
-                
-                print(f"🗑️ Cleaned up database: Reaction role message {payload.message_id} was deleted.")
-            except Exception as e:
-                ic(f"Error cleaning up deleted message from DB: {e}")
-
-    @commands.Cog.listener()
-    async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent):
-        """Handles bulk deletions (like using a /purge command)."""
-        for message_id in payload.message_ids:
-            if message_id in self.reaction_roles:
-                try:
-                    cur.execute("DELETE FROM react_messages WHERE message_id = %s", (message_id,))
-                    del self.reaction_roles[message_id]
-                    print(f"🗑️ Bulk Cleanup: Removed {message_id} from DB.")
-                except Exception as e:
-                    ic(e)
 
     # Function to create a command
     def create_command(self, name, description, response):
