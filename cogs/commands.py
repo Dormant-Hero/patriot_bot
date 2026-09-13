@@ -16,8 +16,7 @@ import threading
 
 load_dotenv()
 
-DH_ID = os.environ.get("DH_ID")
-
+DH_ID = int(os.environ.get("DH_ID")) 
 # testing enviornment_variables
 DB_NAME = os.environ.get("TEST_DBNAME")
 PATRIOTS_ROLE_ID = os.environ.get("PATRIOT_ROLE_ID")
@@ -396,7 +395,7 @@ class Commands(commands.Cog):
     @commands.command(name='sync', description='Owner only')
     async def sync(self, ctx):
         try:
-            if ctx.author.id == int(DH_ID): # os.env get always returns a string
+            if ctx.author.id == DH_ID:
                 await self.bot.tree.sync()
                 await ctx.send("syncing commands boss")
             else:
