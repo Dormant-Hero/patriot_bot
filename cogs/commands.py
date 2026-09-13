@@ -16,26 +16,18 @@ import threading
 
 load_dotenv()
 
-DEFAULT_ROLE = "Patriots"
 DH_ID = os.environ.get("DH_ID")
 
 # testing enviornment_variables
 DB_NAME = os.environ.get("TEST_DBNAME")
 PATRIOTS_ROLE_ID = os.environ.get("PATRIOT_ROLE_ID")
-GUILD_ID = os.environ.get("GUILD_ID")
 HELP_THREAD_ID = os.environ.get("HELP_THREAD_ID")
-SURVIVAL_CHANNEL_ID = os.environ.get("SURVIVAL_CHANNEL_ID")
-MGO2_CHANNEL_ID = os.environ.get("MGO2_CHANNEL_ID")
 
 # live variables
 # DB_NAME = os.environ.get("DBNAME")
 # bot_token = os.environ.get("TOKEN")
 # PATRIOTS_ROLE_ID = os.environ.get("PATRIOT_ROLE_ID")
-# GUILD_ID = os.environ.get("GUILD_ID")
 # HELP_THREAD_ID = os.environ.get("HELP_THREAD_ID")
-# SURVIVAL_CHANNEL_ID = os.environ.get("SURVIVAL_CHANNEL_ID")
-# MGO2_CHANNEL_ID = os.environ.get("MGO2_CHANNEL_ID")
-
 
 def open_db_connection():
     connection = psycopg2.connect(
@@ -170,11 +162,6 @@ async def database_health_check_loop():
         except Exception as error:
             ic("Database health check failed:", error)
         await asyncio.sleep(60)
-
-client_id = os.environ.get("CLIENTID")  # Replace this with your own client id
-assets = {
-    "large_image": "large-image"}
-
 
 def restart_bot():
     os.execv(sys.executable, [sys.executable] + sys.argv)
