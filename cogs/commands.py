@@ -21,13 +21,11 @@ DH_ID = os.environ.get("DH_ID")
 # testing enviornment_variables
 DB_NAME = os.environ.get("TEST_DBNAME")
 PATRIOTS_ROLE_ID = os.environ.get("PATRIOT_ROLE_ID")
-HELP_THREAD_ID = os.environ.get("HELP_THREAD_ID")
 
 # live variables
 # DB_NAME = os.environ.get("DBNAME")
 # bot_token = os.environ.get("TOKEN")
 # PATRIOTS_ROLE_ID = os.environ.get("PATRIOT_ROLE_ID")
-# HELP_THREAD_ID = os.environ.get("HELP_THREAD_ID")
 
 def open_db_connection():
     connection = psycopg2.connect(
@@ -165,30 +163,6 @@ async def database_health_check_loop():
 
 def restart_bot():
     os.execv(sys.executable, [sys.executable] + sys.argv)
-    def find_matches(self, search):
-        search_lower = search.lower()
-        terms = search_lower.split()
-        matches = []
-
-        for record in self.index["records"].values():
-            category_label = self.index["labels"].get(record["category"], record["category"])
-            haystack = " ".join(filter(None, [
-                record["name"],
-                record["summary"],
-                record["description"],
-                record["response"],
-                category_label
-            ])).lower()
-
-            if all(term in haystack for term in terms):
-                matches.append(record)
-
-        matches.sort(key=lambda record: (
-            not record["name"].lower().startswith(search_lower),
-            not any(record["name"].lower().startswith(term) for term in terms),
-            record["name"].lower()
-        ))
-        return matches
 
 class Commands(commands.Cog):
     def __init__(self, bot):
@@ -365,11 +339,10 @@ class Commands(commands.Cog):
     @app_commands.command(name="add_command")
     @app_commands.describe(command_name="Add a new !command name",
                            command_description="Describe what the command does",
-                           command_response="Paste the message the command will respond with",
-                           category="Pick an existing category or type a new one; blank uses Uncategorised"
+                           command_response="Paste the message the command will respond with"
                            )
     async def add_command_to_bot(self, interaction: discord.Interaction, command_name: str, command_description: str,
-                                 command_response: str, category: typing.Optional[str] = None):
+                                 command_response: str):
         if "\\n" in command_response:
             command_response = command_response.replace("\\n", "\n")
         command_name = command_name.lower()
@@ -385,29 +358,27 @@ class Commands(commands.Cog):
             cur.execute(
                 """
                 UPDATE bot_commands
-                SET command_response = %s, category = %s
+                SET command_response = %s
                 WHERE lower(command_name) = lower(%s)
                 """,
-                (command_response, category_id, command_name)
+                (command_response, command_name)
             )
         else:
             cur.execute(
                 """
                 INSERT INTO bot_commands
-                    (command_name, command_description, command_response, category)
-                VALUES (%s, %s, %s, %s)
+                    (command_name, command_description, command_response)
+                VALUES (%s, %s, %s)
                 """,
-                (command_name, command_description, command_response, category_id)
+                (command_name, command_description, command_response)
             )
 
         self.bot.remove_command(command_name)
         self.create_command(command_name, command_description, command_response)
 
         await interaction.response.send_message(
-            f'Command `{command_name}` {action} successfully!\nCategory: **{category_label}**'
+            f'Command `{command_name}` {action} successfully!'
         )
-        thread = interaction.guild.get_thread(help_thread_id)
-        await thread.send(f"Command **{command_name}** has been {action}. <@699603124226228275>")
 
     # Command to add a new command
     @app_commands.command(name="delete_command")
@@ -449,17 +420,13 @@ class Commands(commands.Cog):
                            emb_title="Title of the embed itself",
                            emb_com_help_description="Description of what your command will do",
                            colour="This is an integer but you can leave it blank",
-                           image_url="Url of the image you would like to add",
-                           category="Pick an existing category or type a new one; blank uses Uncategorised")
+                           image_url="Url of the image you would like to add")
     async def add_embed(self, interaction: discord.Interaction, emb_com_name: str, emb_com_content: str,
-                        emb_title: str, emb_com_help_description: str, colour: int = None, image_url: str = None,
-                        category: typing.Optional[str] = None):
+                        emb_title: str, emb_com_help_description: str, colour: int = None, image_url: str = None):
         if colour is None:
             colour = 3447003
         if "\\n" in emb_com_content:
             emb_com_content = emb_com_content.replace("\\n", "\n")
-
-        category_id, category_label = get_or_create_help_category(category)
         emb_com_name = emb_com_name.lower()
 
         cur.execute(
@@ -477,23 +444,21 @@ class Commands(commands.Cog):
                     command_description = %s,
                     embed_color = %s,
                     embed_image = %s,
-                    embed_help = %s,
-                    category = %s
+                    embed_help = %s
                 WHERE lower(command_name) = lower(%s)
                 """,
-                (emb_title, emb_com_content, colour, image_url, emb_com_help_description,
-                 category_id, emb_com_name)
+                (emb_title, emb_com_content, colour, image_url, emb_com_help_description, emb_com_name)
             )
         else:
             cur.execute(
                 """
                 INSERT INTO bot_commands_embed
                     (command_name, command_title, command_description,
-                     embed_color, embed_image, embed_help, category)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                     embed_color, embed_image, embed_help)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 """,
                 (emb_com_name, emb_title, emb_com_content, colour, image_url,
-                 emb_com_help_description, category_id)
+                 emb_com_help_description)
             )
 
         self.bot.remove_command(emb_com_name)
@@ -507,7 +472,7 @@ class Commands(commands.Cog):
         )
 
         await interaction.response.send_message(
-            f'Embed command `{emb_com_name}` {action} successfully!\nCategory: **{category_label}**'
+            f'Embed command `{emb_com_name}` {action} successfully!'
         )
 
     @commands.command(name='sync', description='Owner only')
