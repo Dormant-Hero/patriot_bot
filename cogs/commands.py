@@ -24,7 +24,6 @@ PATRIOTS_ROLE_ID = os.environ.get("PATRIOT_ROLE_ID")
 
 # live variables
 # DB_NAME = os.environ.get("DBNAME")
-# bot_token = os.environ.get("TOKEN")
 # PATRIOTS_ROLE_ID = os.environ.get("PATRIOT_ROLE_ID")
 
 def open_db_connection():
@@ -397,7 +396,7 @@ class Commands(commands.Cog):
     @commands.command(name='sync', description='Owner only')
     async def sync(self, ctx):
         try:
-            if ctx.author.id == DH_ID:
+            if ctx.author.id == int(DH_ID): # os.env get always returns a string
                 await self.bot.tree.sync()
                 await ctx.send("syncing commands boss")
             else:
