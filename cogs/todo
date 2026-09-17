@@ -1,0 +1,16 @@
+# Step 1:
+
+Use the database library to load commands and embed commands already available in the database
+Status = tbc
+
+# Step 2:
+
+Create functionality that adds/deletes commands. Both will need to restart 
+the bot to re-apply the commands quickly. Also I should research if I have to restart the cog or bot to reload
+new commands.
+Status = tbc
+
+# Overall Guidelines:
+
+-- Consider moving DB logic to it's own file.
+-- No AI just google without it's AI to really encourage personal growth and show what I am capable of. 
