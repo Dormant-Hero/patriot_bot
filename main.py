@@ -22,7 +22,6 @@ db_name = os.environ.get("TEST_DBNAME")
 bot_token = os.environ.get("TEST_TOKEN2")
 patriots_role_id = 1277242036394917889
 guild_id = 1277242036222824468
-help_thread_id = 1277263982947995752
 survival_channel_id = 1277242036701106213
 adventure_kimi_thread_id = 1279170049374031986
 
@@ -31,7 +30,6 @@ adventure_kimi_thread_id = 1279170049374031986
 # bot_token = os.environ.get("TOKEN")
 # patriots_role_id = 809851420211150959
 # guild_id = 809840002989162516
-# help_thread_id = 1241119181466767501
 # survival_channel_id = 1243287389657370664
 # adventure_kimi_thread_id = 1281375345097965618
 

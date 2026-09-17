@@ -8,3 +8,4 @@ backups/
 cogs/backup/
 verification.py
 messaround/
+commands_backup.py
