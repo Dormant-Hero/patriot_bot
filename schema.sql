@@ -3,7 +3,7 @@ CREATE TABLE bot_commands (
     command_name VARCHAR(100) NOT NULL UNIQUE,
     command_description TEXT,
     command_response TEXT
-)
+);
 
 CREATE TABLE bot_commands_embed (
     id SERIAL PRIMARY KEY,
@@ -13,4 +13,4 @@ CREATE TABLE bot_commands_embed (
     embed_color INT,
     embed_image TEXT,
     embed_help TEXT
-)
+);
