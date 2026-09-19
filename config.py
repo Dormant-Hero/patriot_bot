@@ -14,7 +14,7 @@ OWNER_ID = int(_required("OWNER_ID"))
 # testing enviornment_variables
 DB_NAME = _required("DBNAME")
 PATRIOTS_ROLE_ID = int(_required("PATRIOT_ROLE_ID"))
-DB_USER = _required("USERNME")
+DB_USER = _required("DB_USER")
 DB_PASSWORD = _required("PASSWORD")
 DB_HOST = _required("HOST")
 DB_PORT = _required("PORT")
