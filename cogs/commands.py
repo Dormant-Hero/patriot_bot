@@ -99,7 +99,9 @@ class Commands(commands.Cog):
         command_name_handle = self.command_name_handler(command_name)
         command_name = command_name_handle[0]
         already_embed_command = in_other_table_db(command_name)
-        if not already_embed_command:
+        if command_name.lower() == "help":
+            await interaction.response.send_message("Cannot add a help command as this is already hard-coded.")
+        elif not already_embed_command:
             command_existing = command_name_handle[1]
             db_action = command_name_handle[2]
             command_response = self.command_response_handler(command_response)
@@ -127,14 +129,15 @@ class Commands(commands.Cog):
         command_name_handle = command_name_handler
         emb_command_name = command_name_handle[0]
         already_non_embed_command = in_other_table_db(emb_command_name, embed=True)
-        if not already_non_embed_command:
+        if emb_command_name.lower() == "help":
+            await interaction.response.send_message("Cannot add a help command as this is already hard-coded")
+        elif not already_non_embed_command:
             emb_command_existing = command_name_handle[1]
             db_action = command_name_handle[2]
             emb_command_content = self.command_response_handler(emb_command_content)
             if emb_command_existing:
                 update_emb_command_db(emb_command_name, emb_title, emb_command_description, emb_command_content, emb_colour, image_url)
             else:
-                ic()
                 add_embed_command_db(emb_command_name, emb_title, emb_command_content, emb_colour, image_url, emb_command_description)
             self.bot.remove_command(emb_command_name)
             self.create_embed_command(
