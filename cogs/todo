@@ -11,11 +11,18 @@ Also moved constants to a config file.
 <del>Create functionality that adds/deletes commands. Both will need to restart 
 the bot to re-apply the commands quickly. Also I should research if I have to restart the cog or bot to reload new commands. </del>
 
+# Step 3:
+
+Complete the readme.
+Create a schema so someone can recreate this (probably change dh_id in the code as well to owner_id)
+make a requirements.txt
+an example.env file
+
 # Overall Guidelines:
 
 <del>-- Consider moving DB logic to it's own file.</del>
 <del>-- No AI just google without it's AI to really encourage personal growth and show what I am capable of. </del>
--- Consider if I need command_name.lower() for everywhere I have that.
+<del>-- Consider if I need command_name.lower() for everywhere I have that. </del>
 
 # Over minor todos
 Make it so the embed colour argument/param has actual word choices for the colours one can select as well as a default if not already.

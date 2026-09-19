@@ -2,12 +2,10 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from icecream import ic
-from config import DH_ID, PATRIOTS_ROLE_ID
-from db import *
+from config import DH_ID
+from db import delete_row_db, existing_command_db, update_emb_command_db, fetch_all_commands_db, fetch_all_embed_commands_db, update_command_db, add_embed_command_db, add_command_db, in_other_table_db
 
-# live variables
-# DB_NAME = os.environ.get("DBNAME")
-# PATRIOTS_ROLE_ID = os.environ.get("PATRIOT_ROLE_ID")
+RESERVED = {"help", "sync", "link"} 
 
 class Commands(commands.Cog):
     def __init__(self, bot):
@@ -16,16 +14,9 @@ class Commands(commands.Cog):
         self.load_embed_commands()
 
 # Cog listeners
-
     @commands.Cog.listener()
     async def on_ready(self):
         ic(f"logged in as {__name__} is online")
-
-    @commands.Cog.listener()
-    async def on_member_join(self, member):
-        role = member.guild.get_role(PATRIOTS_ROLE_ID)
-        await member.add_roles(role, atomic=True)
-        ic(f"{member} was given {role} role")
 
 # Functions
 
@@ -59,7 +50,7 @@ class Commands(commands.Cog):
 
     def command_name_handler(self, txt, embed=False):
         command_name = txt.lower()
-        existing = existing_command_db(txt, embed)
+        existing = existing_command_db(command_name, embed)
         if existing:
             action = "Updated"
         else:
@@ -70,6 +61,14 @@ class Commands(commands.Cog):
         if "\\n" in response:
             response = response.replace("\\n", "\n")
         return response
+
+    async def cog_app_command_error(self, interaction, error):
+        ic(error)
+        msg = "Something went wrong. Check the logs."
+        if interaction.response.is_done():
+            await interaction.followup.send(msg, ephemeral=True)
+        else:
+            await interaction.response.send_message(msg, ephemeral=True)
 
 # Commands
 
@@ -93,13 +92,17 @@ class Commands(commands.Cog):
         await interaction.response.send_message(
             f"Your character link should be <https://mgo2pc.com/profile/{character_name.replace(' ', '%20')}>")
         
+
+    
+                
     @app_commands.command(name="add_command", description="Add a ! command to the bot (e.g. !hello)")
+    @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(command_name='Please input the command name', command_description='Please input the command description', command_response='Please input the command response')
     async def add_command_to_bot(self, interaction: discord.Interaction, command_name: str, command_description: str, command_response: str):
         command_name_handle = self.command_name_handler(command_name)
         command_name = command_name_handle[0]
         already_embed_command = in_other_table_db(command_name)
-        if command_name.lower() == "help":
+        if command_name in RESERVED:
             await interaction.response.send_message("Cannot add a help command as this is already hard-coded.")
         elif not already_embed_command:
             command_existing = command_name_handle[1]
@@ -117,6 +120,7 @@ class Commands(commands.Cog):
 
 
     @app_commands.command(name="add_embed_command", description="Add a ! command to the bot (e.g. !hello) with an embed")
+    @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(emb_command_name="Please input the embed command name",
                             emb_title= "Please input the title of the embed post",
                             emb_command_description="Please input the embed command description", 
@@ -126,14 +130,13 @@ class Commands(commands.Cog):
     async def add_embed(self, interaction: discord.Interaction, emb_command_name: str, emb_title: str, emb_command_description: str,
                          emb_command_content: str, emb_colour: int = 3447003, image_url: str = None):
         command_name_handler = self.command_name_handler(emb_command_name, embed=True)
-        command_name_handle = command_name_handler
-        emb_command_name = command_name_handle[0]
+        emb_command_name = command_name_handler[0]
         already_non_embed_command = in_other_table_db(emb_command_name, embed=True)
-        if emb_command_name.lower() == "help":
+        if emb_command_name in RESERVED:
             await interaction.response.send_message("Cannot add a help command as this is already hard-coded")
         elif not already_non_embed_command:
-            emb_command_existing = command_name_handle[1]
-            db_action = command_name_handle[2]
+            emb_command_existing = command_name_handler[1]
+            db_action = command_name_handler[2]
             emb_command_content = self.command_response_handler(emb_command_content)
             if emb_command_existing:
                 update_emb_command_db(emb_command_name, emb_title, emb_command_description, emb_command_content, emb_colour, image_url)
@@ -153,8 +156,10 @@ class Commands(commands.Cog):
             await interaction.response.send_message(f"Embed command `{emb_command_name}` not created. `{emb_command_name} already exists as a non-embed command.")
 
     @app_commands.command(name="delete_command")
+    @app_commands.default_permissions(manage_guild=True)
     @app_commands.describe(command_name="Please input the name of the embed or non-embed command you wish to delete.")
     async def delete_command(self, interaction: discord.Interaction, command_name: str):
+        command_name = command_name.lower()
         exists_as_embed = existing_command_db(command_name, embed=True)
         exists_as_command = existing_command_db(command_name, embed=False)
         if exists_as_embed:

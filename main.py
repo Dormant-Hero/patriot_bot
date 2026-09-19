@@ -1,43 +1,18 @@
 import discord
-from aiohttp.hdrs import SERVER
 from discord.ext import commands
-from dotenv import load_dotenv
-import os
 import asyncio
+import logging
 from pathlib import Path
 from icecream import ic
+from config import TOKEN
 
-image_path = Path("event_image.png")
+logging.basicConfig(level=logging.INFO)
 
-load_dotenv()
-
-DEFAULT_ROLE = "Patriots"
-# Connect to the agreSQL server.
-
-kimi_id = 243555896884461568
-dh_id = 699603124226228275
-
-# testing enviornment_variables
-db_name = os.environ.get("TEST_DBNAME")
-bot_token = os.environ.get("TEST_TOKEN2")
-patriots_role_id = 1277242036394917889
-guild_id = 1277242036222824468
-survival_channel_id = 1277242036701106213
-adventure_kimi_thread_id = 1279170049374031986
-
-# live variables
-# db_name = os.environ.get("DBNAME")
-# bot_token = os.environ.get("TOKEN")
-# patriots_role_id = 809851420211150959
-# guild_id = 809840002989162516
-# survival_channel_id = 1243287389657370664
-# adventure_kimi_thread_id = 1281375345097965618
-
+COGS_DIR = Path(__file__).parent / "cogs"
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-intents.reactions = True
 bot = commands.Bot(command_prefix="!", intents=intents, case_insensitive=True, status=discord.Status.online)
 bot.remove_command("help")
 
@@ -57,26 +32,25 @@ async def on_ready():
     await bot.change_presence(activity=activity)
 
 
-async def reload(cog):
+async def load_cog(name):
     try:
-        await cog
+        await bot.load_extension(name)
     except Exception as e:
         ic(e)
         await asyncio.sleep(60)
-        await cog
+        await bot.load_extension(name)
 
 
 async def load():
-    for filename in os.listdir("./cogs"):
-        if filename.endswith(".py"):
-            await reload(bot.load_extension(f"cogs.{filename[:-3]}"))
-            # await bot.load_extension(f"cogs.{filename[:-3]}")
+    for path in COGS_DIR.glob("*.py"):
+        await load_cog(f"cogs.{path.stem}")
 
 
 async def main():
     async with bot:
         await load()
-        await bot.start(bot_token)
+        await bot.start(TOKEN)
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
