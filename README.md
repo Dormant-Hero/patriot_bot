@@ -7,6 +7,8 @@ Admins can create and delete `!` commands from inside Discord itself. Commands
 live in Postgres and get registered at runtime, so adding one doesn't need a
 restart.
 
+<img width="900" height="326" alt="demo" src="https://github.com/user-attachments/assets/a33d75dc-9567-4a47-b874-623fc5a216e0" />
+
 ## What it does
 
 Admins:
