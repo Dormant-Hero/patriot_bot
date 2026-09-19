@@ -2,28 +2,10 @@ import discord
 import asyncio
 from discord.ext import commands
 from discord import app_commands
-# note the below is pip install python-dotenv to get this one installed!
-from dotenv import load_dotenv
-import os
 from icecream import ic
-import time
-from pathlib import Path
-import psycopg
-import sys
-import typing
 import threading
-
-load_dotenv()
-
-DH_ID = int(os.environ.get("DH_ID")) 
-# testing enviornment_variables
-DB_NAME = os.environ.get("TEST_DBNAME")
-PATRIOTS_ROLE_ID = os.environ.get("PATRIOT_ROLE_ID")
-DB_USER = os.environ.get("USERNME")
-DB_PASSWORD = os.environ.get("PASSWORD")
-DB_HOST = os.environ.get("HOST")
-DB_PORT = os.environ.get("PORT")
-DB_CONNNECTION_STRING = f"dbname={DB_NAME} user={DB_USER} password={DB_PASSWORD} host={DB_HOST} port={DB_PORT}"
+from config import DH_ID, PATRIOTS_ROLE_ID
+from db import *
 
 # live variables
 # DB_NAME = os.environ.get("DBNAME")
@@ -35,6 +17,8 @@ class Commands(commands.Cog):
         self.load_commands()
         self.load_embed_commands()
 
+# Cog listeners
+
     @commands.Cog.listener()
     async def on_ready(self):
         ic(f"logged in as {__name__} is online")
@@ -44,6 +28,8 @@ class Commands(commands.Cog):
         role = member.guild.get_role(PATRIOTS_ROLE_ID)
         await member.add_roles(role, atomic=True)
         ic(f"{member} was given {role} role")
+
+# Functions
 
     # Function to create a command
     def create_command(self, name, description, response):
@@ -60,28 +46,34 @@ class Commands(commands.Cog):
             if image_url:
                 embed.set_image(url=image_url)
             await ctx.send(embed=embed)
-
         command.__name__ = name
         self.bot.command(name=name, help=help_text)(command)
 
     def load_commands(self):
-        with psycopg.connect(DB_CONNNECTION_STRING) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT command_name, command_description, command_response FROM bot_commands")
-                rows = cur.fetchall()
-        for name, description, response in rows: # for loop outside of connection as to not interrupt it.
+        rows = fetch_all_commands_db()
+        for name, description, response in rows: 
             self.create_command(name, description, response)
-        # conn.close() no longer needed in psycopg3, the context manager handles closing the connection automatically.
-        # No need for the connection pool as this is just one load of commands at startup and the connection is closed after that. Cold boot is fine as just miliseconds.
 
-    
     def load_embed_commands(self):
-        with psycopg.connect(DB_CONNNECTION_STRING) as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT command_name, command_title, command_description, embed_color, embed_image, embed_help FROM bot_commands_embed")
-                rows = cur.fetchall()
-        for name, title, description, color, image_url, help_text in rows: # for loop outside of connection as to not interrupt it.
+        rows = fetch_all_embed_commands_db()
+        for name, title, description, color, image_url, help_text in rows:
             self.create_embed_command(name, title, description, color, image_url, help_text)
+
+    def command_name_handler(self, txt, embed=False):
+        command_name = txt.lower()
+        existing = existing_command_db(txt, embed)
+        if existing:
+            action = "Updated"
+        else:
+            action = "Added"
+        return command_name, existing, action
+
+    def command_response_handler(self, response):
+        if "\\n" in response:
+            response = response.replace("\\n", "\n")
+        return response
+
+# Commands
 
     @commands.command(name='sync', description='Owner only')
     async def sync(self, ctx):
@@ -95,11 +87,62 @@ class Commands(commands.Cog):
             ic()
             ic(e)
 
+# App commands (use the !sync command then restart the bot and your Discord client to see these commands in discord)
+
     @app_commands.command(name="link", description="Get a link to your character by typing the character name")
     @app_commands.describe(character_name='Please input your character name', )
     async def link(self, interaction: discord.Interaction, character_name: str):
         await interaction.response.send_message(
             f"Your character link should be <https://mgo2pc.com/profile/{character_name.replace(' ', '%20')}>")
         
+    @app_commands.command(name="add_command", description="Add a ! command to the bot (e.g. !hello)")
+    @app_commands.describe(command_name='Please input the command name', command_description='Please input the command description', command_response='Please input the command response')
+    async def add_command_to_bot(self, interaction: discord.Interaction, command_name: str, command_description: str, command_response: str):
+        command_name_handle = self.command_name_handler(command_name)
+        command_name = command_name_handle[0]
+        command_existing = command_name_handle[1]
+        db_action = command_name_handle[2]
+        command_response = self.command_response_handler(command_response)
+        if command_existing:
+            update_command_db(command_name, command_response, command_description)
+        else:
+            add_command_db(command_name, command_description, command_response)
+        self.bot.remove_command(command_name)
+        self.create_command(command_name, command_description, command_response)
+        await interaction.response.send_message(f"Command `{command_name}`, {db_action} successfully!")
+
+    @app_commands.command(name="add_embed_command", description="Add a ! command to the bot (e.g. !hello) with an embed")
+    @app_commands.describe(emb_command_name="Please input the embed command name",
+                            emb_title= "Please input the title of the embed post",
+                            emb_command_description="Please input the embed command description", 
+                            emb_command_content="This is the content which your embed will display",
+                            emb_colour="Please input embed colour. This is an integer but you can leave this blank", # I will revisit this later to be a dropdown. Need to read the discord.py docs as it can be better.
+                            image_url="Url of the image you would like the embed to contain")
+    async def add_embed(self, interaction: discord.Interaction, emb_command_name: str, emb_title: str, emb_command_description: str,
+                         emb_command_content: str, emb_colour: int = 3447003, image_url: str = None):
+        command_name_handler = self.command_name_handler(emb_command_name, embed=True)
+        command_name_handle = command_name_handler
+        emb_command_name = command_name_handle[0]
+        emb_command_existing = command_name_handle[1]
+        db_action = command_name_handle[2]
+        emb_command_content = self.command_response_handler(emb_command_content)
+        ic()
+        if emb_command_existing:
+            ic()
+            update_emb_command_db(emb_command_name, emb_title, emb_command_description, emb_command_content, emb_colour, image_url)
+        else:
+            ic()
+            add_embed_command_db(emb_command_name, emb_title, emb_command_content, emb_colour, image_url, emb_command_description)
+        self.bot.remove_command(emb_command_name)
+        self.create_embed_command(
+            name=emb_command_name,
+            title=emb_title,
+            description=emb_command_content,
+            color=emb_colour,
+            image_url=image_url,
+            help_text=emb_command_description
+        )
+        await interaction.response.send_message(f"Embed command `{emb_command_name}` {db_action} successfully!")
+
 async def setup(bot):
     await bot.add_cog(Commands(bot))

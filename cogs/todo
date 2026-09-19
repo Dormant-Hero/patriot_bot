@@ -1,6 +1,10 @@
 # Step 1:
 
 <del>Use the database library to load commands and embed commands already available in the database</del>
+edit: Opted to put database logic in its own db.py file at the top level. This is because some of the code could
+be repeated and to some extent seems to be better common practice.
+
+Also moved constants to a config file.
 
 # Step 2:
 
