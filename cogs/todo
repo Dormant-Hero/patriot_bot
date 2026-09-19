@@ -13,10 +13,13 @@ the bot to re-apply the commands quickly. Also I should research if I have to re
 
 # Step 3:
 
-Complete the readme.
-Create a schema so someone can recreate this (probably change dh_id in the code as well to owner_id)
+<del>Complete the readme.</del>
+<del>Create a schema so someone can recreate this (probably change dh_id in the code as well to owner_id)
 make a requirements.txt
-an example.env file
+an example.env file</del>
+
+# Future
+- Add lobby bots here
 
 # Overall Guidelines:
 
@@ -27,7 +30,7 @@ an example.env file
 # Over minor todos
 Make it so the embed colour argument/param has actual word choices for the colours one can select as well as a default if not already.
 
-Make a full on help command with search and paged embed.
+Make  help and error commands with search and paginated embed.
 
 
 # Notes So Far:

@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from icecream import ic
-from config import DH_ID
+from config import OWNER_ID
 from db import delete_row_db, existing_command_db, update_emb_command_db, fetch_all_commands_db, fetch_all_embed_commands_db, update_command_db, add_embed_command_db, add_command_db, in_other_table_db
 
 RESERVED = {"help", "sync", "link"} 
@@ -75,7 +75,7 @@ class Commands(commands.Cog):
     @commands.command(name='sync', description='Owner only')
     async def sync(self, ctx):
         try:
-            if ctx.author.id == DH_ID:
+            if ctx.author.id == OWNER_ID:
                 await self.bot.tree.sync()
                 await ctx.send("syncing commands boss")
             else:
