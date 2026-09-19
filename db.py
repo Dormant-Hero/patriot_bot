@@ -96,3 +96,17 @@ def in_other_table_db(command_name, embed=False):
                     cur.execute("SELECT id FROM bot_commands_embed WHERE command_name = %s", (command_name,))
                     existing = cur.fetchone()
                     return existing
+
+def delete_row_db(command_name, embed=False):
+    with psycopg.connect(DB_CONNECTION_STRING) as conn:
+         with conn.cursor() as cur:
+            if embed:
+                cur.execute(f"""
+                DELETE FROM bot_commands_embed
+                WHERE command_name = '{command_name.lower()}'
+                """)
+            else:
+                cur.execute(f"""
+                DELETE FROM bot_commands
+                WHERE command_name = '{command_name.lower()}'
+                """)

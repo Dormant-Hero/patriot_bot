@@ -152,5 +152,22 @@ class Commands(commands.Cog):
         else:
             await interaction.response.send_message(f"Embed command `{emb_command_name}` not created. `{emb_command_name} already exists as a non-embed command.")
 
+    @app_commands.command(name="delete_command")
+    @app_commands.describe(command_name="Please input the name of the embed or non-embed command you wish to delete.")
+    async def delete_command(self, interaction: discord.Interaction, command_name: str):
+        exists_as_embed = existing_command_db(command_name, embed=True)
+        exists_as_command = existing_command_db(command_name, embed=False)
+        if exists_as_embed:
+            self.bot.remove_command(command_name)
+            delete_row_db(command_name, embed=True)
+            await interaction.response.send_message(f"Embed command `{command_name}` deleted rejoice!")
+        elif exists_as_command:
+            self.bot.remove_command(command_name)
+            delete_row_db(command_name, embed=False)
+            await interaction.response.send_message(f"Command `{command_name}` deleted rejoice!")
+        else:
+            await interaction.response.send_message(f"Command `{command_name}` does not exist at all, thus not deleted. Do not rejoice")
+        
+
 async def setup(bot):
     await bot.add_cog(Commands(bot))
