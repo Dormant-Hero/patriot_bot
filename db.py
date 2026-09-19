@@ -72,14 +72,12 @@ def update_emb_command_db(command_name, emb_title, emb_description, emb_content,
                 (emb_title, emb_content, emb_colour, emb_image_url, emb_description, command_name.lower())
             )
             conn.commit()
-
-
         
 def existing_command_db(command_name, embed):
     with psycopg.connect(DB_CONNECTION_STRING) as conn:
         with conn.cursor() as cur:
             if not embed:
-                cur.execute(f"SELECT id FROM bot_commands WHERE command_name = %s", (command_name,))
+                cur.execute("SELECT id FROM bot_commands WHERE command_name = %s", (command_name,))
                 existing = cur.fetchone()
                 return existing
             else:
@@ -87,3 +85,14 @@ def existing_command_db(command_name, embed):
                 existing = cur.fetchone()
                 return existing
 
+def in_other_table_db(command_name, embed=False):
+     with psycopg.connect(DB_CONNECTION_STRING) as conn:
+            with conn.cursor() as cur:
+                if embed:
+                    cur.execute("SELECT id FROM bot_commands WHERE command_name = %s", (command_name,))
+                    existing = cur.fetchone()
+                    return existing
+                else:
+                    cur.execute("SELECT id FROM bot_commands_embed WHERE command_name = %s", (command_name,))
+                    existing = cur.fetchone()
+                    return existing

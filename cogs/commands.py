@@ -1,9 +1,7 @@
 import discord
-import asyncio
 from discord.ext import commands
 from discord import app_commands
 from icecream import ic
-import threading
 from config import DH_ID, PATRIOTS_ROLE_ID
 from db import *
 
@@ -100,16 +98,21 @@ class Commands(commands.Cog):
     async def add_command_to_bot(self, interaction: discord.Interaction, command_name: str, command_description: str, command_response: str):
         command_name_handle = self.command_name_handler(command_name)
         command_name = command_name_handle[0]
-        command_existing = command_name_handle[1]
-        db_action = command_name_handle[2]
-        command_response = self.command_response_handler(command_response)
-        if command_existing:
-            update_command_db(command_name, command_response, command_description)
+        already_embed_command = in_other_table_db(command_name)
+        if not already_embed_command:
+            command_existing = command_name_handle[1]
+            db_action = command_name_handle[2]
+            command_response = self.command_response_handler(command_response)
+            if command_existing:
+                update_command_db(command_name, command_response, command_description)
+            else:
+                add_command_db(command_name, command_description, command_response)
+            self.bot.remove_command(command_name)
+            self.create_command(command_name, command_description, command_response)
+            await interaction.response.send_message(f"Command `{command_name}`, {db_action} successfully!")
         else:
-            add_command_db(command_name, command_description, command_response)
-        self.bot.remove_command(command_name)
-        self.create_command(command_name, command_description, command_response)
-        await interaction.response.send_message(f"Command `{command_name}`, {db_action} successfully!")
+            await interaction.response.send_message(f"Command `{command_name}` not created. `{command_name}` already exists as am embed command.")
+
 
     @app_commands.command(name="add_embed_command", description="Add a ! command to the bot (e.g. !hello) with an embed")
     @app_commands.describe(emb_command_name="Please input the embed command name",
@@ -123,26 +126,28 @@ class Commands(commands.Cog):
         command_name_handler = self.command_name_handler(emb_command_name, embed=True)
         command_name_handle = command_name_handler
         emb_command_name = command_name_handle[0]
-        emb_command_existing = command_name_handle[1]
-        db_action = command_name_handle[2]
-        emb_command_content = self.command_response_handler(emb_command_content)
-        ic()
-        if emb_command_existing:
-            ic()
-            update_emb_command_db(emb_command_name, emb_title, emb_command_description, emb_command_content, emb_colour, image_url)
+        already_non_embed_command = in_other_table_db(emb_command_name, embed=True)
+        if not already_non_embed_command:
+            emb_command_existing = command_name_handle[1]
+            db_action = command_name_handle[2]
+            emb_command_content = self.command_response_handler(emb_command_content)
+            if emb_command_existing:
+                update_emb_command_db(emb_command_name, emb_title, emb_command_description, emb_command_content, emb_colour, image_url)
+            else:
+                ic()
+                add_embed_command_db(emb_command_name, emb_title, emb_command_content, emb_colour, image_url, emb_command_description)
+            self.bot.remove_command(emb_command_name)
+            self.create_embed_command(
+                name=emb_command_name,
+                title=emb_title,
+                description=emb_command_content,
+                color=emb_colour,
+                image_url=image_url,
+                help_text=emb_command_description
+            )
+            await interaction.response.send_message(f"Embed command `{emb_command_name}` {db_action} successfully!")
         else:
-            ic()
-            add_embed_command_db(emb_command_name, emb_title, emb_command_content, emb_colour, image_url, emb_command_description)
-        self.bot.remove_command(emb_command_name)
-        self.create_embed_command(
-            name=emb_command_name,
-            title=emb_title,
-            description=emb_command_content,
-            color=emb_colour,
-            image_url=image_url,
-            help_text=emb_command_description
-        )
-        await interaction.response.send_message(f"Embed command `{emb_command_name}` {db_action} successfully!")
+            await interaction.response.send_message(f"Embed command `{emb_command_name}` not created. `{emb_command_name} already exists as a non-embed command.")
 
 async def setup(bot):
     await bot.add_cog(Commands(bot))
